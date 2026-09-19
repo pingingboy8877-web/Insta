@@ -1,0 +1,10 @@
+const form=document.querySelector("#form"),input=document.querySelector("#url"),result=document.querySelector("#result"),message=document.querySelector("#message");
+form.addEventListener("submit",async e=>{
+ e.preventDefault(); const url=input.value.trim();
+ if(!/^https?:\/\/(www\.)?instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/i.test(url)){message.textContent="Enter a valid public Instagram post, reel, or video URL.";message.className="error";return}
+ const button=form.querySelector("button");button.disabled=true;button.textContent="FETCHING…";message.className="";message.textContent="Resolving media…";result.classList.add("hidden");
+ try{const r=await fetch("/api/resolve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({url})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Unable to resolve this post.");render(d)}
+ catch(err){message.textContent=err.message;message.className="error"}finally{button.disabled=false;button.innerHTML="FETCH <span>↗</span>"}
+});
+function safe(v){return String(v||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function render(d){message.textContent="MEDIA RESOLVED";let media=d.mediaUrl?(d.type==="video"?"<video controls playsinline src=\""+safe(d.mediaUrl)+"\"></video>":"<img src=\""+safe(d.mediaUrl)+"\" alt=\"Instagram media preview\">"):"<div style=\"color:#666;font:10px DM Mono\">PREVIEW UNAVAILABLE</div>";let dl=d.downloadUrl?"<a class=\"download\" href=\""+safe(d.downloadUrl)+"\" download>DOWNLOAD "+String(d.type||"MEDIA").toUpperCase()+" ↓</a>":"";result.innerHTML="<div class=\"preview\">"+media+"</div><div class=\"meta\"><div class=\"tag\">"+safe(d.type||"MEDIA")+" / PUBLIC POST</div><h2>"+safe(d.title||"Instagram media")+"</h2><p>"+safe(d.description||"Media metadata resolved successfully.")+"</p><div class=\"actions\">"+dl+"<a class=\"open\" href=\""+safe(d.postUrl)+"\" target=\"_blank\" rel=\"noreferrer\">OPEN INSTAGRAM ↗</a></div></div>";result.classList.remove("hidden")}
